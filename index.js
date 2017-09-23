@@ -1,0 +1,46 @@
+const route = require('koa-route'),
+    koa = require('koa'),
+    config = require('./resources/config.js'),
+    mongojs = require('mongojs'),
+    db = mongojs(config.mongo.url, ['users']),
+    nano = require('nanomsg'),
+    nanoReq = nano.socket('req');
+
+
+var app = koa();
+app.listen(config.server.port);
+
+app.use(route.get('/update', updateUser));
+
+nanoReq.connect(config.verificationUrl);
+
+function * updateUser() {
+    this.body = yield signUpFunction(this.header);
+}
+function signUpFunction(req) {
+  console.log(req)
+    return new Promise(function (fulfill, reject) {
+      try{
+      var token = req.token;
+      var tokenArr = token.split('.');
+      var tokenClaims = new Buffer(tokenArr[1],'base64')
+      var userNameFromToken = (JSON.parse(tokenClaims)).sub;
+
+    } catch (err){
+      console.log(err);
+    }
+    nanoReq.send('jwt '+token);
+
+        nanoReq.on('data', function (buf) {
+          if (buf.toString() === 'true'){
+              //so token is true
+              db.users.find({"username":userNameFromToken}).forEach(function (err, doc) {
+                console.log(doc)
+                if(doc !== null || doc !=="null"){
+                  console.log("FOUNDED IN DB ",doc.password)
+                }
+                })
+          }
+        });
+    })
+}
