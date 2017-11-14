@@ -18,7 +18,6 @@ function * updateUser() {
     this.body = yield signUpFunction(this.header);
 }
 function signUpFunction(req) {
-  console.log(req)
     return new Promise(function (fulfill, reject) {
       try{
       var token = req.token;
@@ -27,17 +26,16 @@ function signUpFunction(req) {
       var userNameFromToken = (JSON.parse(tokenClaims)).sub;
 
     } catch (err){
-      console.log(err);
+      //TODO handle error
     }
     nanoReq.send('jwt '+token);
 
         nanoReq.on('data', function (buf) {
           if (buf.toString() === 'true'){
-              //so token is true
               db.users.find({"username":userNameFromToken}).forEach(function (err, doc) {
-                console.log(doc)
                 if(doc !== null || doc !=="null"){
-                  console.log("FOUNDED IN DB ",doc.password)
+                  //TODO handle error
+
                 }
                 })
           }
