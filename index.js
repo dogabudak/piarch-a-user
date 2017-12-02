@@ -20,23 +20,22 @@ function * updateUser() {
 function signUpFunction(req) {
     return new Promise(function (fulfill, reject) {
       try{
-      var token = req.token;
-      var tokenArr = token.split('.');
-      var tokenClaims = new Buffer(tokenArr[1],'base64')
-      var userNameFromToken = (JSON.parse(tokenClaims)).sub;
+      let token = req.token,
+        tokenArr = token.split('.'),
+        tokenClaims = new Buffer(tokenArr[1],'base64'),
+        userNameFromToken = (JSON.parse(tokenClaims)).sub;
 
     } catch (err){
       //TODO handle error
     }
     nanoReq.send('jwt '+token);
-
         nanoReq.on('data', function (buf) {
           if (buf.toString() === 'true'){
               db.users.find({"username":userNameFromToken}).forEach(function (err, doc) {
                 if(doc !== null || doc !=="null"){
                   //TODO handle error
-
                 }
+                  //TODO update the user with incoming parameters 
                 })
           }
         });
