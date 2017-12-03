@@ -11,13 +11,29 @@ var app = koa();
 app.listen(config.server.port);
 
 app.use(route.get('/update', updateUser));
+app.use(route.post('/update', currentLoc));
 
 nanoReq.connect(config.verificationUrl);
-
-function * updateUser() {
-    this.body = yield signUpFunction(this.header);
+function * currentLoc() {
+    this.body = yield currentLocFunction(this);
 }
-function signUpFunction(req) {
+function * updateUser() {
+    this.body = yield updateUserFunction(this.header);
+}
+
+function currentLocFunction(comingRequest) {
+  //TODO location infor is at content need to write mongo
+  console.log(comingRequest.content)
+    return new Promise(function (fulfill, reject) {
+
+    })
+}
+
+
+
+
+
+function updateUserFunction(req) {
     return new Promise(function (fulfill, reject) {
       try{
       let token = req.token,
@@ -35,7 +51,8 @@ function signUpFunction(req) {
                 if(doc !== null || doc !=="null"){
                   //TODO handle error
                 }
-                  //TODO update the user with incoming parameters 
+                  //TODO update the user with incoming parameters
+
                 })
           }
         });
