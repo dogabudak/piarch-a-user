@@ -1,5 +1,6 @@
 const route = require('koa-route'),
     koa = require('koa'),
+    bodyParser = require('koa-bodyparser'),
     config = require('./resources/config.js'),
     mongojs = require('mongojs'),
     db = mongojs(config.mongo.url, ['users']),
@@ -7,23 +8,27 @@ const route = require('koa-route'),
     nanoReq = nano.socket('req');
 
 
-var app = koa();
+var app = new koa();
 app.listen(config.server.port);
 
-app.use(route.get('/update', updateUser));
-app.use(route.post('/update', currentLoc));
+app.use(bodyParser());
+app.use(route.get('/update', async ctx => {
+  this.body = await updateUserFunction(ctx.header);
+}));
 
+
+//app.use(route.post('/update', currentLoc));
 nanoReq.connect(config.verificationUrl);
-function * currentLoc() {
-    this.body = yield currentLocFunction(this);
-}
-function * updateUser() {
-    this.body = yield updateUserFunction(this.header);
-}
 
-function currentLocFunction(comingRequest) {
-  //TODO location infor is at content need to write mongo
-  console.log(comingRequest.content)
+
+
+//function * currentLoc() {
+//    this.body = yield currentLocFunction(this);
+//}
+
+function currentLocFunction(context) {
+  //TODO location inform. is at content, need to write mongo
+  console.log(context.request.body)
     return new Promise(function (fulfill, reject) {
 
     })
@@ -33,7 +38,7 @@ function currentLocFunction(comingRequest) {
 
 
 
-function updateUserFunction(req) {
+ function updateUserFunction(req) {
     return new Promise(function (fulfill, reject) {
       try{
       let token = req.token,
