@@ -11,8 +11,8 @@
   "dependencies": {
     "i": "^0.3.6",
     "koa": "^2.4.1",
-    "koa-bodyparser": "^4.2.0",
-    "koa-route": "^2.4.2",
+    "koa-body": "^2.5.0",
+    "koa-router": "^7.3.0",
     "mongojs": "^2.4.0",
     "nanomsg": "^3.3.0"
   }

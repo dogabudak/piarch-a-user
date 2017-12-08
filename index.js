@@ -1,65 +1,93 @@
-const route = require('koa-route'),
-    koa = require('koa'),
-    bodyParser = require('koa-bodyparser'),
-    config = require('./resources/config.js'),
-    mongojs = require('mongojs'),
-    db = mongojs(config.mongo.url, ['users']),
-    nano = require('nanomsg'),
-    nanoReq = nano.socket('req');
+const Router = require('koa-router'),
+koa = require('koa'),
+koaBody = require('koa-body'),
+config = require('./resources/config.js'),
+mongojs = require('mongojs'),
+db = mongojs(config.mongo.url, ['users']),
+nano = require('nanomsg'),
+nanoReq = nano.socket('req');
 
+//TODO token check must be a plug-in
 
 var app = new koa();
+const route = new Router();
+
 app.listen(config.server.port);
+app.use(route.routes())
+   .use(route.allowedMethods());
+route.get('/update',function (ctx) {
+  return updateUserFunction(ctx).then(function(dataToReturn) {
+    ctx.body = dataToReturn;
+  });
+});
 
-app.use(bodyParser());
-app.use(route.get('/update', async ctx => {
-  this.body = await updateUserFunction(ctx.header);
-}));
 
+route.post('/update',koaBody(), function (ctx){
+  return currentLocFunction(ctx).then(function(dataToReturn) {
+    ctx.body = {};
+  });
+});
 
-//app.use(route.post('/update', currentLoc));
 nanoReq.connect(config.verificationUrl);
 
 
-
-//function * currentLoc() {
-//    this.body = yield currentLocFunction(this);
-//}
-
 function currentLocFunction(context) {
-  //TODO location inform. is at content, need to write mongo
-  console.log(context.request.body)
-    return new Promise(function (fulfill, reject) {
+  return new Promise(function (fulfill, reject) {
+  let body = context.request.body;
+  let userLoc = body.currentLoc;
+  let token ;
+  let userNameFromToken;
+  try{
+    token = body.token,
+    tokenArr = token.split('.'),
+    tokenClaims = new Buffer(tokenArr[1],'base64'),
+    userNameFromToken = (JSON.parse(tokenClaims)).sub;
+  } catch (err){
+    //TODO handle error
+  }
+  nanoReq.send('jwt '+ token);
+  nanoReq.on('data', function (buf) {
+    if (buf.toString() === 'true'){
+      db.users.findAndModify({
+	query: { "username": userNameFromToken },
+	update: { $set: { "lastLocation": userLoc } },
+  new:true
+}, function (err, doc, lastErrorObject) {
+  console.log(doc)
+  //TODO a return needed ?
+})
+    }
+  });
 
-    })
+
+  })
 }
 
 
 
 
 
- function updateUserFunction(req) {
-    return new Promise(function (fulfill, reject) {
-      try{
+function updateUserFunction(req) {
+  return new Promise(function (fulfill, reject) {
+    try{
       let token = req.token,
-        tokenArr = token.split('.'),
-        tokenClaims = new Buffer(tokenArr[1],'base64'),
-        userNameFromToken = (JSON.parse(tokenClaims)).sub;
+      tokenArr = token.split('.'),
+      tokenClaims = new Buffer(tokenArr[1],'base64'),
+      userNameFromToken = (JSON.parse(tokenClaims)).sub;
 
     } catch (err){
       //TODO handle error
     }
     nanoReq.send('jwt '+token);
-        nanoReq.on('data', function (buf) {
-          if (buf.toString() === 'true'){
-              db.users.find({"username":userNameFromToken}).forEach(function (err, doc) {
-                if(doc !== null || doc !=="null"){
-                  //TODO handle error
-                }
-                  //TODO update the user with incoming parameters
-
-                })
-          }
-        });
-    })
+    nanoReq.on('data', function (buf) {
+      if (buf.toString() === 'true'){
+        db.users.findAndModify({
+          query: { "username": userNameFromToken }
+	       // ,update: { $set: { tag: 'maintainer' } }
+}, function (err, doc, lastErrorObject) {
+          //TODO a return needed ?
+})
+      }
+    });
+  })
 }
