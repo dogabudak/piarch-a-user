@@ -15,15 +15,15 @@ const route = new Router();
 app.listen(config.server.port);
 app.use(route.routes())
    .use(route.allowedMethods());
-route.get('/update',function (ctx) {
+route.post('/update-user',function (ctx) {
   return updateUserFunction(ctx).then(function(dataToReturn) {
     ctx.body = dataToReturn;
   });
 });
 
 
-route.post('/update',koaBody(), function (ctx){
-  return currentLocFunction(ctx).then(function(dataToReturn) {
+route.post('/update-location',koaBody(), function (ctx){
+  return updateCurrentLocation(ctx).then(function(dataToReturn) {
     ctx.body = {};
   });
 });
@@ -31,10 +31,10 @@ route.post('/update',koaBody(), function (ctx){
 nanoReq.connect(config.verificationUrl);
 
 
-function currentLocFunction(context) {
+function updateCurrentLocation(context) {
   return new Promise(function (fulfill, reject) {
   let body = context.request.body;
-  let userLoc = body.currentLoc;
+  let userLocation = body.currentLocation;
   let token ;
   let userNameFromToken;
   try{
@@ -50,7 +50,7 @@ function currentLocFunction(context) {
     if (buf.toString() === 'true'){
       db.users.findAndModify({
 	query: { "username": userNameFromToken },
-	update: { $set: { "lastLocation": userLoc } },
+	update: { $set: { "lastLocation": userLocation } },
   new:true
 }, function (err, doc, lastErrorObject) {
   console.log(doc)

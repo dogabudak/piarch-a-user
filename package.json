@@ -14,6 +14,6 @@
     "koa-body": "^2.5.0",
     "koa-router": "^7.3.0",
     "mongojs": "^2.4.0",
-    "nanomsg": "^3.3.0"
+    "nanomsg": "4.1.0"
   }
 }
