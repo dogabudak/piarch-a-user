@@ -35,6 +35,8 @@ function updateCurrentLocation(context) {
   return new Promise(function (fulfill, reject) {
   let body = context.request.body;
   let userLocation = body.currentLocation;
+
+  userLocation.timestamp = new Date().toISOString();
   let token ;
   let userNameFromToken;
   try{
@@ -49,22 +51,17 @@ function updateCurrentLocation(context) {
   nanoReq.on('data', function (buf) {
     if (buf.toString() === 'true'){
       db.users.findAndModify({
-	query: { "username": userNameFromToken },
-	update: { $set: { "lastLocation": userLocation } },
-  new:true
-}, function (err, doc, lastErrorObject) {
-  console.log(doc)
+    	query: { "username": userNameFromToken },
+    	update: { $push: { "locations": userLocation } },
+       new: true
+      }, function (err, doc) {
   //TODO a return needed ?
-})
-    }
+    })}
   });
 
 
   })
 }
-
-
-
 
 
 function updateUserFunction(req) {
