@@ -1,0 +1,11 @@
+{
+    "mongo": {
+      "url": "mongodb+srv://dogabudak:199100@piarkacluster.snpsj.mongodb.net/piarka?retryWrites=true&w=majority"
+    },
+    "server": {
+        "port": 3020,
+        "path": "/update"
+    },
+    "authnUrl": "127.0.0.1:3018",
+    "verificationUrl":"tcp://127.0.0.1:5608"
+}
