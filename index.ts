@@ -4,6 +4,7 @@ import * as koaBody from 'koa-body'
 import * as mongodb from 'mongodb'
 import * as config from './config/config.json';
 import {checkToken} from "./src/checkToken";
+import {logger} from "./src/logger";
 
 const MongoClient = mongodb.MongoClient;
 const client = new MongoClient(config.mongo.url, { useNewUrlParser: true });
@@ -38,7 +39,7 @@ const updateCurrentLocation = (context) => {
             //TODO remove this unknown conversion
             userNameFromToken = (JSON.parse(tokenClaims as unknown as string)).sub;
         } catch (err) {
-            console.log(err)
+            logger.error(err)
             reject(err)
         }
         const isValidToken = await checkToken(token)
@@ -51,7 +52,7 @@ const updateCurrentLocation = (context) => {
                     {$push: {"locations": userLocation}},
                     (err, updatedDoc) => {
                         if (err){
-                            console.log(err)
+                            logger.error(err)
                             reject()
                         } else {
                             fulfill({})
@@ -73,7 +74,7 @@ const updateUser = (req) => {
           //TODO remove this unknown conversion
           userNameFromToken = (JSON.parse(tokenClaims as unknown as string)).sub;
         } catch (err) {
-          console.log(err)
+            logger.error(err)
           reject()
         }
         const isValidToken = checkToken(token)
@@ -85,7 +86,7 @@ const updateUser = (req) => {
                     [],
                     (err, updatedDoc) => {
                         if (err){
-                            console.log(err)
+                            logger.error(err)
                             reject()
                         } else {
                             fulfill({})
