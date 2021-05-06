@@ -17,7 +17,7 @@ app.use(route.routes())
     .use(route.allowedMethods());
 
 route.post('/update-user', async (ctx) => {
-    ctx.body = await updateUser(ctx)
+    await updateUser(ctx)
 });
 
 route.post('/update-location', koaBody(), async (ctx) => {
@@ -26,6 +26,7 @@ route.post('/update-location', koaBody(), async (ctx) => {
 
 const updateCurrentLocation = (context) => {
     return new Promise(async (fulfill, reject) => {
+        return
         let body = context.request.body;
         let userLocation = body.currentLocation;
 
@@ -66,6 +67,7 @@ const updateCurrentLocation = (context) => {
 
 const updateUser = (req) => {
     return new Promise((fulfill, reject) => {
+        //TODO this is not working user informaton is coming but we are not yet saving it
         const token = req.token;
         let userNameFromToken = '';
         try {
