@@ -2,8 +2,8 @@ import * as Router from 'koa-router'
 import * as koa from 'koa'
 import * as koaBody from 'koa-body'
 import * as mongodb from 'mongodb'
+import {checkToken} from 'piarch-a-verification-plugin'
 import * as config from './config/config.json';
-import {checkToken} from "./src/checkToken";
 import {logger} from "./src/logger";
 
 const MongoClient = mongodb.MongoClient;
@@ -26,7 +26,6 @@ route.post('/update-location', koaBody(), async (ctx) => {
 
 const updateCurrentLocation = (context) => {
     return new Promise(async (fulfill, reject) => {
-        return
         let body = context.request.body;
         let userLocation = body.currentLocation;
 
