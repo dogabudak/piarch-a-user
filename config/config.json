@@ -1,6 +1,6 @@
 {
     "mongo": {
-      "url": "mongodb+srv://dogabudak:199100@piarkacluster.snpsj.mongodb.net/piarka?retryWrites=true&w=majority"
+        "url": "mongodb://localhost:27017"
     },
     "server": {
         "port": 3020
