@@ -7,48 +7,81 @@ import {logger} from 'piarch-a-logger'
 import * as config from './config/config.json';
 
 const MongoClient = mongodb.MongoClient;
-const client = new MongoClient(config.mongo.url, { useNewUrlParser: true });
-
+const client = new MongoClient(config.mongo.url, { useNewUrlParser: true,  useUnifiedTopology: true });
+let collection;
+client.connect().then(()=> {
+    const db = client.db('piarka');
+    collection = db.collection('users');
+ });
 const app = new koa();
 const route = new Router();
 
 app.listen(config.server.port);
 app.use(route.routes())
     .use(route.allowedMethods());
-
+// TODO token operations can be a middleware
 route.post('/update-user',koaBody(), async (ctx) => {
-    await updateUser(ctx)
+    let body = ctx.request.body;
+    const token = ctx.request.header.authorize.split(' ')[1]
+    let userNameFromToken = getUserNameFromToken(token);
+    /*
+    //TODO uncomment when development is finished
+    const isValidToken = await checkToken(token);
+    if(!isValidToken){
+        return
+    } 
+    */
+    await updateUser(userNameFromToken, body.user)
 });
 
 route.post('/update-location', koaBody(), async (ctx) => {
-    await updateCurrentLocation(ctx)
+    const token = ctx.request.header.authorize.split(' ')[1]
+    let userNameFromToken = getUserNameFromToken(token);
+    /*
+    //TODO uncomment when development is finished
+    const isValidToken = await checkToken(token);
+    if(!isValidToken){
+        return
+    } 
+    */
+    const location = ctx.request.body.currentLocation;
+    await updateCurrentLocation(userNameFromToken, location)
 });
 
-const updateCurrentLocation = (context) => {
+route.get('/user', async (ctx) => {
+    const token = ctx.request.header.authorize.split(' ')[1]
+    let userNameFromToken = getUserNameFromToken(token);
+    /*
+    //TODO uncomment when development is finished
+    const isValidToken = await checkToken(token);
+    if(!isValidToken){
+        return
+    } 
+    */
+    const user = await getUser(userNameFromToken);
+    ctx.body = user
+});
+const getUser = (username) => {
+    return new Promise(async (fulfill) => {
+        const user = await collection.findOne({"username": username});
+        // TODO use projection instead
+        delete user.locations
+        fulfill(user)
+    })
+} 
+const getUserNameFromToken = (token) => {
+        const tokenArr = token.split('.');
+        const tokenClaims = Buffer.from(tokenArr[1], 'base64');
+        return (JSON.parse(tokenClaims.toString())).sub;
+} 
+const updateCurrentLocation = (username, location) => {
     return new Promise(async (fulfill, reject) => {
-        let body = context.request.body;
-        let userLocation = body.currentLocation;
-        userLocation.timestamp = new Date().toISOString();
-        let token;
-        let userNameFromToken;
-        try {
-            token = body.token;
-            const tokenArr = token.split('.');
-            const tokenClaims = new Buffer(tokenArr[1], 'base64');
-            //TODO remove this unknown conversion
-            userNameFromToken = (JSON.parse(tokenClaims as unknown as string)).sub;
-        } catch (err) {
-            logger.info(err)
-            reject(err)
-        }
-        const isValidToken = await checkToken(token)
-        if(isValidToken){
-            client.connect(() => {
-                const collection = client.db("piarka").collection("users");
+        location.timestamp = new Date().toISOString();
+        // TODO fidnandmdify is deprecated
                 collection.findAndModify(
-                    {"username": userNameFromToken},
+                    {"username": username},
                     [],
-                    {$push: {"locations": userLocation}},
+                    {$push: {"locations": location}},
                     (err, updatedDoc) => {
                         if (err){
                             logger.info(err)
@@ -57,32 +90,15 @@ const updateCurrentLocation = (context) => {
                             fulfill({})
                         }
                     })
-            })
-        }
     })
 }
 
 
-const updateUser = (context) => {
+const updateUser = (username, userObject) => {
     return new Promise((fulfill, reject) => {
-        const token = context.request.body.token;
-        let userNameFromToken;
-        try {
-          const tokenArr = token.split('.');
-          const tokenClaims = new Buffer(tokenArr[1], 'base64');
-          //TODO remove this unknown conversion
-          userNameFromToken = (JSON.parse(tokenClaims as unknown as string)).sub;
-        } catch (err) {
-            logger.info(err)
-          reject()
-        }
-        const isValidToken = checkToken(token)
-        if(isValidToken){
-            client.connect(err => {
-                const collection = client.db("piarka").collection("users");
                 collection.update(
-                    {"username": userNameFromToken},
-                    {$set: context.request.body.user },
+                    {"username": username},
+                    {$set: userObject},
                     (err, updatedDoc) => {
                         if (err){
                             logger.info(err)
@@ -91,7 +107,5 @@ const updateUser = (context) => {
                             fulfill({})
                         }
                     })
-            })
-        }
     })
 }
