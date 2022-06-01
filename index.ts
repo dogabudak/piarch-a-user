@@ -3,7 +3,8 @@ import * as koa from 'koa'
 import * as koaBody from 'koa-body'
 import * as mongodb from 'mongodb'
 import {checkToken} from 'piarch-a-verification-plugin'
-import * as config from './config/config.json';
+
+import 'dotenv/config'
 
 const MongoClient = mongodb.MongoClient;
 const client = new MongoClient(config.mongo.url, { useNewUrlParser: true,  useUnifiedTopology: true });
