@@ -7,7 +7,7 @@ import {checkToken} from 'piarch-a-verification-plugin'
 import 'dotenv/config'
 
 const MongoClient = mongodb.MongoClient;
-const client = new MongoClient(config.mongo.url, { useNewUrlParser: true,  useUnifiedTopology: true });
+const client = new MongoClient(process.env.MONGODB, { useNewUrlParser: true,  useUnifiedTopology: true });
 let collection;
 client.connect().then(()=> {
     const db = client.db('piarka');
@@ -16,7 +16,7 @@ client.connect().then(()=> {
 const app = new koa();
 const route = new Router();
 
-app.listen(config.server.port);
+app.listen(process.env.PORT);
 app.use(route.routes())
     .use(route.allowedMethods());
 // TODO token operations can be a middleware
