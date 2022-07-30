@@ -9,28 +9,30 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const Router = require("koa-router");
-const koa = require("koa");
-const koaBody = require("koa-body");
-const mongodb = require("mongodb");
 require("dotenv/config");
-const MongoClient = mongodb.MongoClient;
-const client = new MongoClient(process.env.MONGODB, { useNewUrlParser: true, useUnifiedTopology: true });
-let collection;
-client.connect().then(() => {
-    const db = client.db('piarka');
-    collection = db.collection('users');
-});
-const app = new koa();
+const Router = require("koa-router");
+const Koa = require("koa");
+const koaBody = require("koa-body");
+const update_1 = require("./src/update");
+const register_1 = require("./src/register");
+const user_1 = require("./src/user");
+const connect_1 = require("./db/connect");
+const app = new Koa();
 const route = new Router();
 app.listen(process.env.PORT);
 app.use(route.routes())
     .use(route.allowedMethods());
+let collection;
+// TODO this can handled better
+// TODO use mongoose, that will help a lot here
+connect_1.connectWithRetry().then((connectionInstance) => {
+    collection = connectionInstance;
+});
 // TODO token operations can be a middleware
 route.post('/update-user', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     let body = ctx.request.body;
     const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = getUserNameFromToken(token);
+    let userNameFromToken = user_1.getUserNameFromToken(token);
     /*
     //TODO uncomment when development is finished
     const isValidToken = await checkToken(token);
@@ -38,12 +40,12 @@ route.post('/update-user', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0,
         return
     }
     */
-    yield updateUser(userNameFromToken, body.user);
+    yield update_1.updateUser(collection, userNameFromToken, body.user);
 }));
 // TODO please refactor here and move these functions to a seperate location
 route.post('/update-location', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = getUserNameFromToken(token);
+    let userNameFromToken = user_1.getUserNameFromToken(token);
     /*
     //TODO uncomment when development is finished
     const isValidToken = await checkToken(token);
@@ -52,11 +54,11 @@ route.post('/update-location', koaBody(), (ctx) => __awaiter(void 0, void 0, voi
     }
     */
     const location = ctx.request.body.currentLocation;
-    yield updateCurrentLocation(userNameFromToken, location);
+    yield update_1.updateCurrentLocation(collection, userNameFromToken, location);
 }));
 route.get('/user', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = getUserNameFromToken(token);
+    let userNameFromToken = user_1.getUserNameFromToken(token);
     /*
     //TODO uncomment when development is finished
     const isValidToken = await checkToken(token);
@@ -64,7 +66,7 @@ route.get('/user', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
         return
     }
     */
-    const user = yield getUser(userNameFromToken);
+    const user = yield user_1.getUser(collection, userNameFromToken);
     ctx.body = user;
 }));
 route.post('/signup', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
@@ -76,74 +78,27 @@ route.post('/signup', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0, func
         return
     }
     */
-    yield registerUser(body.user);
+    yield register_1.registerUser(collection, body.user);
     ctx.body = 'Token';
 }));
-const getUser = (username) => {
-    return new Promise((fulfill) => __awaiter(void 0, void 0, void 0, function* () {
-        const user = yield collection.findOne({ "username": username });
-        // TODO use projection instead
-        delete user.locations;
-        fulfill(user);
-    }));
-};
-const registerUser = (user) => {
-    return new Promise(function (fulfill, reject) {
-        let { username, password } = user;
-        if (username.length < 3 || password.length < 3) {
-            reject({ message: 'username or password too short' });
-        }
-        collection.find({ username }).toArray((err, reply) => {
-            if (!reply[0] && (!err)) {
-                const data = { sub: username, iss: 'piarch_a' };
-                const options = { algorithm: 'RS256', expiresIn: (10 * 60 * 60) };
-                collection.insertMany([{ username, password }], (err, reply) => {
-                    if (err) {
-                        reject({ message: err });
-                    }
-                    else {
-                        delete reply._id;
-                        // TODO return a token
-                        reply.token = 'TOKEN';
-                        fulfill(reply);
-                    }
-                });
-            }
-            else {
-                reject({ message: 'This user already exist' });
-            }
-        });
-    });
-};
-const getUserNameFromToken = (token) => {
-    const tokenArr = token.split('.');
-    const tokenClaims = Buffer.from(tokenArr[1], 'base64');
-    return (JSON.parse(tokenClaims.toString())).sub;
-};
-const updateCurrentLocation = (username, location) => {
-    return new Promise((fulfill, reject) => __awaiter(void 0, void 0, void 0, function* () {
-        location.timestamp = new Date().toISOString();
-        // TODO fidnandmdify is deprecated
-        collection.findAndModify({ "username": username }, [], { $push: { "locations": location } }, (err, updatedDoc) => {
-            if (err) {
-                reject();
-            }
-            else {
-                fulfill({});
-            }
-        });
-    }));
-};
-const updateUser = (username, userObject) => {
-    return new Promise((fulfill, reject) => {
-        collection.update({ "username": username }, { $set: userObject }, (err, updatedDoc) => {
-            if (err) {
-                reject();
-            }
-            else {
-                fulfill({});
-            }
-        });
-    });
-};
+route.get('/forgot-password/:email', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_1.getUser(collection, ctx.params.email);
+    if (user) {
+        // TODO send a mail to the user with a token link
+        // TODO this link will token will open a web page to enter new password
+    }
+}));
+route.post('/change-password/:email', koaBody(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
+    const body = ctx.request.body;
+    const token = ctx.request.header.authorize.split(' ')[1];
+    let userNameFromToken = user_1.getUserNameFromToken(token);
+    /*
+    //TODO uncomment when development is finished
+    const isValidToken = await checkToken(token);
+    if(!isValidToken){
+        return
+    }
+    */
+    yield update_1.updateUser(collection, userNameFromToken, body.password);
+}));
 //# sourceMappingURL=index.js.map
