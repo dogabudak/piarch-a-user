@@ -1,45 +1,13 @@
-export const updateUser = (collection, username, userObject) => {
-    return new Promise((fulfill, reject) => {
-        collection.update(
-            {"username": username},
-            {$set: userObject},
-            (err, updatedDoc) => {
-                if (err){
-                    reject()
-                } else {
-                    fulfill({})
-                }
-            })
-    })
+import {UserModel} from "../db/model/user";
+
+export const updateUser = async (username, userObject) => {
+   await UserModel.where({"username": username}).updateOne(userObject)
+
 }
-export const updatePassword = (collection, username, password) => {
-    return new Promise((fulfill, reject) => {
-        collection.update(
-            {"username": username},
-            { $set: { password } },
-            (err, updatedDoc) => {
-                if (err){
-                    reject()
-                } else {
-                    fulfill({})
-                }
-            })
-    })
+export const updatePassword = async (username, password) => {
+    await UserModel.updateOne({"username": username},{ password})
 }
-export const updateCurrentLocation = (collection, username, location) => {
-    return new Promise(async (fulfill, reject) => {
-        location.timestamp = new Date().toISOString();
-        // TODO fidnandmdify is deprecated
-        collection.findAndModify(
-            {"username": username},
-            [],
-            {$push: {"locations": location}},
-            (err, updatedDoc) => {
-                if (err){
-                    reject()
-                } else {
-                    fulfill({})
-                }
-            })
-    })
+export const updateCurrentLocation = async (username, location) => {
+    location.timestamp = new Date().toISOString();
+    await UserModel.updateOne({"username": username},  {$push: {"locations": location}})
 }

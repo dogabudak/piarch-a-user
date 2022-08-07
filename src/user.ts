@@ -1,10 +1,10 @@
-export const getUser = (collection, username) => {
-    return new Promise(async (fulfill) => {
-        const user = await collection.findOne({"username": username});
-        // TODO use projection instead
-        delete user.locations
-        fulfill(user)
-    })
+import {UserModel} from "../db/model/user";
+
+export const getUser = (username) => {
+    return UserModel.findOne({username}, {locations: -1})
+}
+export const getUserFromEMail = (mail) => {
+    return UserModel.findOne({mail}, {locations: -1})
 }
 
 export const getUserNameFromToken = (token) => {

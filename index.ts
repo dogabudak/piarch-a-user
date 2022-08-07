@@ -3,11 +3,10 @@ import 'dotenv/config'
 import * as Router from 'koa-router'
 import * as Koa from 'koa'
 import * as koaBody from 'koa-body'
-import {checkToken} from 'piarch-a-verification-plugin'
 
 import {updateCurrentLocation, updateUser} from "./src/update";
 import {registerUser} from "./src/register";
-import {getUser, getUserNameFromToken} from "./src/user";
+import {getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
 import {connectWithRetry} from "./db/connect";
 
 const app = new Koa();
@@ -16,13 +15,8 @@ const route = new Router();
 app.listen(process.env.PORT);
 app.use(route.routes())
     .use(route.allowedMethods());
-let collection
-// TODO this can handled better
-// TODO use mongoose, that will help a lot here
-connectWithRetry().then((connectionInstance) => {
-        collection = connectionInstance
-    }
-)
+
+connectWithRetry()
 
 // TODO token operations can be a middleware
 route.post('/update-user', koaBody(), async (ctx) => {
@@ -36,7 +30,7 @@ route.post('/update-user', koaBody(), async (ctx) => {
         return
     }
     */
-    await updateUser(collection, userNameFromToken, body.user)
+    await updateUser(userNameFromToken, body.user)
 });
 // TODO please refactor here and move these functions to a seperate location
 route.post('/update-location', koaBody(), async (ctx) => {
@@ -50,7 +44,7 @@ route.post('/update-location', koaBody(), async (ctx) => {
     }
     */
     const location = ctx.request.body.currentLocation;
-    await updateCurrentLocation(collection, userNameFromToken, location)
+    await updateCurrentLocation(userNameFromToken, location)
 });
 
 route.get('/user', async (ctx) => {
@@ -63,8 +57,7 @@ route.get('/user', async (ctx) => {
         return
     }
     */
-    const user = await getUser(collection, userNameFromToken);
-    ctx.body = user
+    ctx.body = await getUser(userNameFromToken)
 });
 route.post('/signup', koaBody(), async (ctx) => {
     const body = ctx.request.body
@@ -75,11 +68,11 @@ route.post('/signup', koaBody(), async (ctx) => {
         return
     }
     */
-    await registerUser(collection, body.user)
+    await registerUser(body.user)
     ctx.body = 'Token'
 });
 route.get('/forgot-password/:email', async (ctx) => {
-    const user = await getUser(collection, ctx.params.email);
+    const user = await getUserFromEMail(ctx.params.email);
     if (user) {
         // TODO send a mail to the user with a token link
         // TODO this link will token will open a web page to enter new password
@@ -97,6 +90,6 @@ route.post('/change-password/:email', koaBody(), async (ctx) => {
         return
     }
     */
-    await updateUser(collection, userNameFromToken, body.password)
+    await updateUser( userNameFromToken, body.password)
 });
 
