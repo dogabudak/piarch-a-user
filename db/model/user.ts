@@ -22,7 +22,8 @@ export const userSchema = new Schema<User>({
     birthdate: Date,
     lastLogin: Date,
     phone: String,
-    locations: [locationSchema]
+    locations: [locationSchema],
+    languagePreferences:[String]
 })
 
 export const UserModel = model<User>('User', userSchema)
