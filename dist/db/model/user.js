@@ -19,12 +19,12 @@ exports.userSchema = new mongoose_1.Schema({
     password: { type: String, unique: true, index: true },
     full_name: String,
     gender: String,
-    mail: String,
     birthdate: Date,
+    mail: String,
     lastLogin: Date,
     phone: String,
     locations: [locationSchema],
     languagePreferences: [String]
 });
-exports.UserModel = mongoose_1.model('User', exports.userSchema);
+exports.UserModel = (0, mongoose_1.model)('User', exports.userSchema);
 //# sourceMappingURL=user.js.map

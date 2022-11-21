@@ -6,7 +6,7 @@ import * as koaBody from 'koa-body'
 
 import {updateCurrentLocation, updateUser} from "./src/update";
 import {registerUser} from "./src/register";
-import {getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
+import {getPublicUser, getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
 import {connectWithRetry} from "./db/connect";
 
 const app = new Koa();
@@ -58,6 +58,11 @@ route.get('/user', async (ctx) => {
     }
     */
     ctx.body = await getUser(userNameFromToken)
+});
+route.get('/public-user/:userName', async (ctx) => {
+    const user = await getPublicUser(ctx.params.userName)
+    console.log(user)
+    ctx.body =user
 });
 route.post('/signup', koaBody(), async (ctx) => {
     const body = ctx.request.body
