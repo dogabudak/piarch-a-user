@@ -8,6 +8,7 @@ import {updateCurrentLocation, updateUser} from "./src/update";
 import {registerUser} from "./src/register";
 import {getPublicUser, getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
 import {connectWithRetry} from "./db/connect";
+import {getChatsForUser} from "./src/message";
 
 const app = new Koa();
 const route = new Router();
@@ -47,6 +48,19 @@ route.post('/update-location', koaBody(), async (ctx) => {
     await updateCurrentLocation(userNameFromToken, location)
 });
 
+route.get('/user/chats', async (ctx) => {
+    const token = ctx.request.header.authorize.split(' ')[1]
+    let userNameFromToken = getUserNameFromToken(token);
+    /*
+    //TODO if there is no token just return
+    const isValidToken = await checkToken(token);
+    if(!isValidToken){
+        return
+    }
+    */
+    ctx.body = await getChatsForUser(userNameFromToken)
+});
+
 route.get('/user', async (ctx) => {
     const token = ctx.request.header.authorize.split(' ')[1]
     let userNameFromToken = getUserNameFromToken(token);
@@ -59,6 +73,7 @@ route.get('/user', async (ctx) => {
     */
     ctx.body = await getUser(userNameFromToken)
 });
+
 route.get('/public-user/:userName', async (ctx) => {
     const user = await getPublicUser(ctx.params.userName)
     console.log(user)
