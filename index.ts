@@ -74,11 +74,6 @@ route.get('/user', async (ctx) => {
     ctx.body = await getUser(userNameFromToken)
 });
 
-route.get('/public-user/:userName', async (ctx) => {
-    const user = await getPublicUser(ctx.params.userName)
-    console.log(user)
-    ctx.body =user
-});
 route.post('/signup', koaBody(), async (ctx) => {
     const body = ctx.request.body
     /*
@@ -113,3 +108,7 @@ route.post('/change-password/:email', koaBody(), async (ctx) => {
     await updateUser( userNameFromToken, body.password)
 });
 
+// TODO move public routes to a separate place
+route.get('/public-user/:userName', async (ctx) => {
+    ctx.body = await getPublicUser(ctx.params.userName)
+});
