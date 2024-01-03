@@ -2,8 +2,8 @@ import 'dotenv/config'
 
 import * as Router from 'koa-router'
 import * as Koa from 'koa'
-import * as koaBody from 'koa-body'
 
+import { koaBody } from 'koa-body'
 import {updateCurrentLocation, updateUser} from "./src/update";
 import {registerUser} from "./src/register";
 import {getPublicUser, getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
@@ -15,15 +15,20 @@ const route = new Router();
 
 app.listen(process.env.PORT);
 app.use(route.routes())
-    .use(route.allowedMethods());
+    .use(route.allowedMethods())
+    .use(koaBody())
+    .use(async (ctx, next) => {
+        ctx.extras ={}
+        let body = ctx.request.body;
+        ctx.extras.token = (ctx.request.header.authorize as string).split(' ')[1]
+        ctx.extras.user = body.user
+        ctx.extras.username = getUserNameFromToken(ctx.extras.token);
+        await next()
+})
 
 connectWithRetry()
 
-// TODO token operations can be a middleware
-route.post('/update-user', koaBody(), async (ctx) => {
-    let body = ctx.request.body;
-    const token = ctx.request.header.authorize.split(' ')[1]
-    let userNameFromToken = getUserNameFromToken(token);
+route.post('/update-user', async (ctx) => {
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -31,12 +36,9 @@ route.post('/update-user', koaBody(), async (ctx) => {
         return
     }
     */
-    await updateUser(userNameFromToken, body.user)
+    await updateUser(ctx.extras.username, ctx.extras.user)
 });
-// TODO please refactor here and move these functions to a seperate location
-route.post('/update-location', koaBody(), async (ctx) => {
-    const token = ctx.request.header.authorize.split(' ')[1]
-    let userNameFromToken = getUserNameFromToken(token);
+route.post('/update-location',  async (ctx) => {
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -45,12 +47,10 @@ route.post('/update-location', koaBody(), async (ctx) => {
     }
     */
     const location = ctx.request.body.currentLocation;
-    await updateCurrentLocation(userNameFromToken, location)
+    await updateCurrentLocation(ctx.extras.username , location)
 });
 
 route.get('/user/chats', async (ctx) => {
-    const token = ctx.request.header.authorize.split(' ')[1]
-    let userNameFromToken = getUserNameFromToken(token);
     /*
     //TODO if there is no token just return
     const isValidToken = await checkToken(token);
@@ -58,12 +58,10 @@ route.get('/user/chats', async (ctx) => {
         return
     }
     */
-    ctx.body = await getChatsForUser(userNameFromToken)
+    ctx.body = await getChatsForUser(ctx.extras.username )
 });
 
 route.get('/user', async (ctx) => {
-    const token = ctx.request.header.authorize.split(' ')[1]
-    let userNameFromToken = getUserNameFromToken(token);
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -71,10 +69,10 @@ route.get('/user', async (ctx) => {
         return
     }
     */
-    ctx.body = await getUser(userNameFromToken)
+    ctx.body = await getUser(ctx.extras.username )
 });
 
-route.post('/signup', koaBody(), async (ctx) => {
+route.post('/signup',  async (ctx) => {
     const body = ctx.request.body
     /*
     //TODO if its local dont check the token, assign a random username
@@ -94,10 +92,8 @@ route.get('/forgot-password/:email', async (ctx) => {
     }
 });
 
-route.post('/change-password/:email', koaBody(), async (ctx) => {
+route.post('/change-password/:email',  async (ctx) => {
     const body = ctx.request.body;
-    const token = ctx.request.header.authorize.split(' ')[1]
-    let userNameFromToken = getUserNameFromToken(token);
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -105,7 +101,7 @@ route.post('/change-password/:email', koaBody(), async (ctx) => {
         return
     }
     */
-    await updateUser( userNameFromToken, body.password)
+    await updateUser(ctx.extras.username , body.password)
 });
 
 // TODO move public routes to a separate place

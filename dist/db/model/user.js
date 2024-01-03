@@ -25,6 +25,7 @@ exports.userSchema = new mongoose_1.Schema({
     phone: String,
     locations: [locationSchema],
     languagePreferences: [String],
+    chats: [String],
 });
-exports.UserModel = mongoose_1.model('User', exports.userSchema);
+exports.UserModel = (0, mongoose_1.model)('User', exports.userSchema);
 //# sourceMappingURL=user.js.map

@@ -21,7 +21,7 @@ const updatePassword = (username, password) => __awaiter(void 0, void 0, void 0,
 exports.updatePassword = updatePassword;
 const updateCurrentLocation = (username, location) => __awaiter(void 0, void 0, void 0, function* () {
     location.timestamp = new Date().toISOString();
-    yield user_1.UserModel.updateOne({ "username": username }, { $push: { "locations": location } });
+    yield user_1.UserModel.updateOne({ "username": username }, { $push: { "locations": { $each: [location], $slice: -10 } } });
 });
 exports.updateCurrentLocation = updateCurrentLocation;
 //# sourceMappingURL=update.js.map
