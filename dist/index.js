@@ -22,13 +22,18 @@ const app = new Koa();
 const route = new Router();
 app.listen(process.env.PORT);
 app.use(route.routes())
-    .use(route.allowedMethods());
-(0, connect_1.connectWithRetry)();
-// TODO token operations can be a middleware
-route.post('/update-user', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
+    .use(route.allowedMethods())
+    .use((0, koa_body_1.koaBody)())
+    .use((ctx, next) => __awaiter(void 0, void 0, void 0, function* () {
+    ctx.extras = {};
     let body = ctx.request.body;
-    const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = (0, user_1.getUserNameFromToken)(token);
+    ctx.extras.token = ctx.request.header.authorize.split(' ')[1];
+    ctx.extras.user = body.user;
+    ctx.extras.username = (0, user_1.getUserNameFromToken)(ctx.extras.token);
+    yield next();
+}));
+(0, connect_1.connectWithRetry)();
+route.post('/update-user', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -36,12 +41,9 @@ route.post('/update-user', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(void 0,
         return
     }
     */
-    yield (0, update_1.updateUser)(userNameFromToken, body.user);
+    yield (0, update_1.updateUser)(ctx.extras.username, ctx.extras.user);
 }));
-// TODO please refactor here and move these functions to a seperate location
-route.post('/update-location', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = (0, user_1.getUserNameFromToken)(token);
+route.post('/update-location', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -50,11 +52,9 @@ route.post('/update-location', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(voi
     }
     */
     const location = ctx.request.body.currentLocation;
-    yield (0, update_1.updateCurrentLocation)(userNameFromToken, location);
+    yield (0, update_1.updateCurrentLocation)(ctx.extras.username, location);
 }));
 route.get('/user/chats', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = (0, user_1.getUserNameFromToken)(token);
     /*
     //TODO if there is no token just return
     const isValidToken = await checkToken(token);
@@ -62,11 +62,9 @@ route.get('/user/chats', (ctx) => __awaiter(void 0, void 0, void 0, function* ()
         return
     }
     */
-    ctx.body = yield (0, message_1.getChatsForUser)(userNameFromToken);
+    ctx.body = yield (0, message_1.getChatsForUser)(ctx.extras.username);
 }));
 route.get('/user', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
-    const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = (0, user_1.getUserNameFromToken)(token);
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -74,9 +72,9 @@ route.get('/user', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
         return
     }
     */
-    ctx.body = yield (0, user_1.getUser)(userNameFromToken);
+    ctx.body = yield (0, user_1.getUser)(ctx.extras.username);
 }));
-route.post('/signup', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
+route.post('/signup', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     const body = ctx.request.body;
     /*
     //TODO if its local dont check the token, assign a random username
@@ -95,10 +93,8 @@ route.get('/forgot-password/:email', (ctx) => __awaiter(void 0, void 0, void 0, 
         // TODO this link will token will open a web page to enter new password
     }
 }));
-route.post('/change-password/:email', (0, koa_body_1.koaBody)(), (ctx) => __awaiter(void 0, void 0, void 0, function* () {
+route.post('/change-password/:email', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
     const body = ctx.request.body;
-    const token = ctx.request.header.authorize.split(' ')[1];
-    let userNameFromToken = (0, user_1.getUserNameFromToken)(token);
     /*
     //TODO if its local dont check the token, assign a random username
     const isValidToken = await checkToken(token);
@@ -106,7 +102,7 @@ route.post('/change-password/:email', (0, koa_body_1.koaBody)(), (ctx) => __awai
         return
     }
     */
-    yield (0, update_1.updateUser)(userNameFromToken, body.password);
+    yield (0, update_1.updateUser)(ctx.extras.username, body.password);
 }));
 // TODO move public routes to a separate place
 route.get('/public-user/:userName', (ctx) => __awaiter(void 0, void 0, void 0, function* () {
