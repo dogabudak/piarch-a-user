@@ -4,10 +4,11 @@ import {UserModel} from "../db/model/user";
 export const getChatsForUser = async (username) => {
 
     const users = await UserModel.findOne({username}, {chats: 1})
-    if (users.chats.length) {
-        const chatArray = []
+    if (users?.chats!.length) {
+        const chatArray: any[] = []
         for (const chatId of users.chats) {
-            chatArray.push(await getChatroom(chatId))
+            const chat = await getChatroom(chatId)
+            chatArray.push(chat)
         }
         return chatArray
     }

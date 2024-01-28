@@ -14,10 +14,11 @@ const message_1 = require("../db/model/message");
 const user_1 = require("../db/model/user");
 const getChatsForUser = (username) => __awaiter(void 0, void 0, void 0, function* () {
     const users = yield user_1.UserModel.findOne({ username }, { chats: 1 });
-    if (users.chats.length) {
+    if (users === null || users === void 0 ? void 0 : users.chats.length) {
         const chatArray = [];
         for (const chatId of users.chats) {
-            chatArray.push(yield (0, exports.getChatroom)(chatId));
+            const chat = yield (0, exports.getChatroom)(chatId);
+            chatArray.push(chat);
         }
         return chatArray;
     }

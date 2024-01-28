@@ -1,110 +1,125 @@
 import 'dotenv/config'
 
-import * as Router from 'koa-router'
-import * as Koa from 'koa'
-
-import { koaBody } from 'koa-body'
-import {updateCurrentLocation, updateUser} from "./src/update";
-import {registerUser} from "./src/register";
+import Fastify, {FastifyReply, FastifyRequest} from 'fastify'
 import {getPublicUser, getUser, getUserFromEMail, getUserNameFromToken} from "./src/user";
-import {connectWithRetry} from "./db/connect";
+import {updateCurrentLocation, updateUser} from "./src/update";
 import {getChatsForUser} from "./src/message";
-
-const app = new Koa();
-const route = new Router();
-
-app.listen(process.env.PORT);
-app.use(route.routes())
-    .use(route.allowedMethods())
-    .use(koaBody())
-    .use(async (ctx, next) => {
-        ctx.extras ={}
-        let body = ctx.request.body;
-        ctx.extras.token = (ctx.request.header.authorize as string).split(' ')[1]
-        ctx.extras.user = body.user
-        ctx.extras.username = getUserNameFromToken(ctx.extras.token);
-        await next()
+import {registerUser} from "./src/register";
+const fastify = Fastify({
+        logger: true
 })
+interface BodyType {
+        currentLocation?: string // needed when we update curent location of the user
+        user?: string // if we update the user
+        password?: string // if we update the password
+        username?: string // inserted in auth middleware
+        token?: string // inserted in auth middleware
+}
+interface ParamsType {
+        email?: string // inserted in auth middleware
+        username?: string // inserted in auth middleware
+}
 
-connectWithRetry()
+export const withPermitMiddleware = async (req: FastifyRequest<{ Body: BodyType }>, reply: FastifyReply) => {
+        let username: string | undefined;
+        try {
+                const { headers: { authorize = '' }, body } = req;
+                const token = (authorize as string).split(' ')[1]
+                username = getUserNameFromToken(token)
+                // TODO get rid of these ts-ognires
+                req.body = {
+                        username, token, ...body
+                }
+        }catch (e) {
+                reply.code(403).send({ error: 'Forbidden' });
+                return
+        }
+        if (!username) {
+                reply.code(403).send({ error: 'Forbidden' });
+                return
+        }
+};
+fastify.addHook('preHandler', withPermitMiddleware)
+//TODO add swagger documents to each endpoint
+//TODO move these endpoints to a separate place
+fastify.post('/update-user', async (req: FastifyRequest<{ Body: BodyType }>,  reply: FastifyReply) => {
+        /*
+        //TODO if its local dont check the token, assign a random username
+        const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+         */
+        await updateUser(req.body.username, req.body.user)
+        reply.code(200).send();
 
-route.post('/update-user', async (ctx) => {
-    /*
-    //TODO if its local dont check the token, assign a random username
-    const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    await updateUser(ctx.extras.username, ctx.extras.user)
 });
-route.post('/update-location',  async (ctx) => {
-    /*
-    //TODO if its local dont check the token, assign a random username
-    const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    const location = ctx.request.body.currentLocation;
-    await updateCurrentLocation(ctx.extras.username , location)
+fastify.post('/update-location', async (req: FastifyRequest<{ Body: BodyType }>) => {
+        //TODO if its local dont check the token, assign a random username
+        /*
+        const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+         */
+        const location = req.body.currentLocation;
+        await updateCurrentLocation(req.body.username, location)
 });
-
-route.get('/user/chats', async (ctx) => {
-    /*
-    //TODO if there is no token just return
-    const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    ctx.body = await getChatsForUser(ctx.extras.username )
-});
-
-route.get('/user', async (ctx) => {
-    /*
-    //TODO if its local dont check the token, assign a random username
-    const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    ctx.body = await getUser(ctx.extras.username )
-});
-
-route.post('/signup',  async (ctx) => {
-    const body = ctx.request.body
-    /*
-    //TODO if its local dont check the token, assign a random username
-     const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    await registerUser(body.user)
-    ctx.body = 'Token'
-});
-route.get('/forgot-password/:email', async (ctx) => {
-    const user = await getUserFromEMail(ctx.params.email);
-    if (user) {
-        // TODO send a mail to the user with a token link
-        // TODO this link will token will open a web page to enter new password
-    }
-});
-
-route.post('/change-password/:email',  async (ctx) => {
-    const body = ctx.request.body;
-    /*
-    //TODO if its local dont check the token, assign a random username
-    const isValidToken = await checkToken(token);
-    if(!isValidToken){
-        return
-    }
-    */
-    await updateUser(ctx.extras.username , body.password)
+fastify.get('/user/chats',async (req: FastifyRequest<{ Body: BodyType }>) => {
+        /*
+        //TODO if there is no token just return
+        const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+        */
+        return await getChatsForUser(req.body.username)
 });
 
 // TODO move public routes to a separate place
-route.get('/public-user/:userName', async (ctx) => {
-    ctx.body = await getPublicUser(ctx.params.userName)
+fastify.get('/public-user/:userName',async (req: FastifyRequest<{ Body: BodyType, Params:ParamsType}>)=> {
+       return getPublicUser(req.params.username)
 });
+fastify.post('/change-password/:email', async (req: FastifyRequest<{ Body: BodyType }>)=> {
+        /*
+        //TODO if its local dont check the token, assign a random username
+        const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+         */
+        await updateUser(req.body.username, req.body.password)
+});
+fastify.get('/forgot-password/:email', async (req: FastifyRequest<{ Body: BodyType, Params:ParamsType }>) => {
+        const user = await getUserFromEMail(req.params.email);
+        if (user) {
+                // TODO send a mail to the user with a token link
+                // TODO this link will token will open a web page to enter new password
+        }
+});
+fastify.get('/user', async (req: FastifyRequest<{ Body: BodyType }>)=> {
+        /*
+        //TODO if its local dont check the token, assign a random username
+        const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+         */
+       return getUser(req.body.username)
+});
+
+
+fastify.post('/signup',  async (req: FastifyRequest<{ Body: BodyType }>) => {
+        /*
+        //TODO if its local dont check the token, assign a random username
+         const isValidToken = await checkToken(token);
+        if(!isValidToken){
+            return
+        }
+         */
+        await registerUser(req.body.user)
+        return { message: 'User registered successfully' }
+});
+fastify.listen({ port: Number(process.env.PORT) }, (err, address) => {
+        if (err) throw err
+})
