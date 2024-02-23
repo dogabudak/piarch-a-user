@@ -14,8 +14,10 @@ const locationSchema = new Schema<UserCoordinates>({
     timestamp: Date,
 })
 export const userSchema = new Schema<User>({
-    username: { type: String, unique: true, index: true },
-    password: { type: String, unique: true, index: true },
+    // TODO instead of text index, you should use search index
+    // TODO this index is not working
+    username: { type: String, unique: true, text: true },
+    password: { type: String, unique: true, index: 1 },
     full_name: String,
     gender: String,
     birthdate: Date,
@@ -23,7 +25,9 @@ export const userSchema = new Schema<User>({
     lastLogin: Date,
     phone: String,
     locations: [locationSchema],
+    // TODO You should create a separate collection for user settings
     languagePreferences:[String],
+    // TODO You should create a separate collection for user chats
     chats:[String],
 })
 

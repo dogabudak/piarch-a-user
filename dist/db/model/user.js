@@ -15,8 +15,9 @@ const locationSchema = new mongoose_1.Schema({
     timestamp: Date,
 });
 exports.userSchema = new mongoose_1.Schema({
-    username: { type: String, unique: true, index: true },
-    password: { type: String, unique: true, index: true },
+    // TODO instead of text index, you should use search index
+    username: { type: String, unique: true, index: 'text' },
+    password: { type: String, unique: true, index: 1 },
     full_name: String,
     gender: String,
     birthdate: Date,
@@ -24,7 +25,9 @@ exports.userSchema = new mongoose_1.Schema({
     lastLogin: Date,
     phone: String,
     locations: [locationSchema],
+    // TODO You should create a separate collection for user settings
     languagePreferences: [String],
+    // TODO You should create a separate collection for user chats
     chats: [String],
 });
 exports.UserModel = (0, mongoose_1.model)('User', exports.userSchema);
