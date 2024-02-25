@@ -17,7 +17,7 @@ export const userSchema = new Schema<User>({
     // TODO instead of text index, you should use search index
     // TODO this index is not working
     username: { type: String, unique: true, text: true },
-    password: { type: String, unique: true, index: 1 },
+    password: { type: String, index: 1 },
     full_name: String,
     gender: String,
     birthdate: Date,
@@ -28,6 +28,7 @@ export const userSchema = new Schema<User>({
     // TODO You should create a separate collection for user settings
     languagePreferences:[String],
     // TODO You should create a separate collection for user chats
+    // TODO this should be array of references
     chats:[String],
 })
 
