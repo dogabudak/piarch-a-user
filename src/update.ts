@@ -9,5 +9,5 @@ export const updatePassword = async (username, password) => {
 }
 export const updateCurrentLocation = async (username, location) => {
     location.timestamp = new Date().toISOString();
-    await UserModel.updateOne({"username": username},  {$push: {"locations": {$each: [location], $slice: -10}}})
+    await UserModel.updateOne({"username": username},  {$push: {"locations": {$each: [location], $position: 0 , $slice: -10}}})
 }
