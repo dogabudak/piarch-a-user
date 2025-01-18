@@ -19,7 +19,7 @@
     "bunyan": "1.8.15",
     "dotenv": "^16.0.0",
     "fastify": "^4.25.2",
-    "mongodb": "3.6.4",
+    "mongodb": "3.6.10",
     "mongoose": "^6.5.0"
   },
   "devDependencies": {
