@@ -103,12 +103,11 @@ fastify.get('/user/search', async (req: FastifyRequest<{ Body: BodyType, Queryst
 
 fastify.get('/user/search/closestUsers', async (req: FastifyRequest<{ Body: BodyType, Querystring: QueryType }>) => {
     const location = await getUserLocation(req.body.username)
-    if(!location){
+    if(!location || !location.locations || location.locations.length < 1){
         return {error: 'User not found'}
     }
-    // @ts-ignore
-    const {altitude , longitude}= location.locations[0].coords
-    return getClosestUsers(altitude , longitude)
+    const {latitude , longitude}= location.locations[0].coords
+    return getClosestUsers(longitude , latitude)
 });
 
 fastify.post('/signup', async (req: FastifyRequest<{ Body: BodyType }>) => {
