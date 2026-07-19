@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: piarch-a-user
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install && npm install -g ts-node typescript
+    startCommand: ts-node index.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3020
+      - key: AUTHURL
+        value: https://piarch-a-token-rs.onrender.com
+      - key: MONGODB
+        sync: false  # Set manually in Render dashboard (secret)

@@ -114,6 +114,7 @@ fastify.post('/signup', async (req: FastifyRequest<{ Body: BodyType }>) => {
     await registerUser(req.body.user)
     return {message: 'User registered successfully'}
 });
-fastify.listen({port: Number(process.env.PORT)}, (err, address) => {
+fastify.listen({port: Number(process.env.PORT), host: '0.0.0.0'}, (err, address) => {
     if (err) throw err
+    console.log(`Server listening on ${address}`)
 })
