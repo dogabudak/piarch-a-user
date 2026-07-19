@@ -7,10 +7,11 @@
     "node": "20.x"
   },
   "scripts": {
-    "start": "ts-node index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node index.ts",
     "watch-node": "nodemon dist/index.js",
-    "watch-ts": "tsc -w",
-    "deploy": "git add . && git commit -m Heroku && git push heroku master"
+    "watch-ts": "tsc -w"
   },
   "author": "",
   "license": "ISC",
