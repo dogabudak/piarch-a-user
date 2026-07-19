@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose'
-import {Chats} from 'piarch-a-interfaces'
+import { Chats } from '../types'
 
 const chatsSchema = new Schema<Chats>({
     chatId: String,

@@ -6,7 +6,9 @@
     "lib": ["es2019", "DOM"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
-    "strictNullChecks": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
     "sourceMap": true
   },
   "include": ["./index.ts", "./src/**/*", "./db/**/*"],

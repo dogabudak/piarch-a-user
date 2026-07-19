@@ -1,5 +1,5 @@
 import { model, Schema } from 'mongoose'
-import {User, Gender, UserCoordinates} from 'piarch-a-interfaces'
+import { User, UserCoordinates } from '../types'
 
 const locationSchema = new Schema<UserCoordinates>({
     coords: {
